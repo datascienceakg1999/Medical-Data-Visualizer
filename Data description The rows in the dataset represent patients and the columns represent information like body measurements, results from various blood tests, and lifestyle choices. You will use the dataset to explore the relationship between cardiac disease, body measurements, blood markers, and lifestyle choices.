@@ -1,0 +1,45 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+df = pd.read_csv('medical_examination.csv')
+
+df['overweight'] = (df['weight'] / (df['height'] / 100) ** 2 > 25).astype(int)
+
+
+df['cholesterol'] = df['cholesterol'].apply(lambda x: 0 if x == 1 else 1)
+df['gluc'] = df['gluc'].apply(lambda x: 0 if x == 1 else 1)
+
+df = df[
+    (df['ap_lo'] <= df['ap_hi']) &
+    (df['height'] >= df['height'].quantile(0.025)) &
+    (df['height'] <= df['height'].quantile(0.975)) &
+    (df['weight'] >= df['weight'].quantile(0.025)) &
+    (df['weight'] <= df['weight'].quantile(0.975))
+]
+
+
+df_long = pd.melt(df, id_vars=['cardio'], value_vars=['cholesterol', 'gluc', 'smoke', 'alco', 'active', 'overweight'])
+
+sns.catplot(
+    x="variable", hue="value", col="cardio",
+    data=df_long, kind="count",
+    height=6, aspect=1
+).set_axis_labels("variable", "total")
+
+plt.savefig('catplot.png')
+
+corr = df.corr()
+
+
+mask = np.triu(np.ones_like(corr, dtype=bool))
+
+
+f, ax = plt.subplots(figsize=(11, 9))
+
+
+sns.heatmap(corr, mask=mask, annot=True, fmt=".1f", cmap='coolwarm', center=0, square=True, linewidths=.5)
+
+plt.savefig('heatmap.png')
